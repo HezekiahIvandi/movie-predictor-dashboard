@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,35 @@ export default function PredictorPage() {
   const [predictions, setPredictions] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [backendConnected, setBackendConnected] = useState<boolean | null>(
+    null,
+  );
+  const [checkingBackend, setCheckingBackend] = useState(false);
+
+  // Check backend health
+  const checkBackendHealth = async () => {
+    setCheckingBackend(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
+      setBackendConnected(res.ok);
+    } catch {
+      setBackendConnected(false);
+    } finally {
+      setCheckingBackend(false);
+    }
+  };
+
+  useEffect(() => {
+    checkBackendHealth();
+    const interval = setInterval(checkBackendHealth, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Handle file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,11 +92,17 @@ export default function PredictorPage() {
         movie_id: d.title,
         comment_text: d.comment,
       }));
-      const res = await fetch("http://127.0.0.1:8000/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: comments }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/predict`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
+          body: JSON.stringify({ data: comments }),
+        },
+      );
       if (!res.ok) throw new Error("Prediction failed");
       const result = await res.json();
       const grouped: Record<string, number[]> = {};
@@ -157,6 +192,24 @@ export default function PredictorPage() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent py-1">
               Movie Rating Predictor
             </h1>
+            <div className="flex items-center gap-2">
+              {checkingBackend ? (
+                <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+              ) : backendConnected === true ? (
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+              ) : backendConnected === false ? (
+                <AlertCircle className="w-5 h-5 text-red-500" />
+              ) : null}
+              <span className="text-sm text-slate-600">
+                {checkingBackend
+                  ? "Checking backend..."
+                  : backendConnected === true
+                    ? "Backend connected"
+                    : backendConnected === false
+                      ? "Backend disconnected"
+                      : "Checking backend..."}
+              </span>
+            </div>
           </div>
           <p className="text-slate-600 text-lg">
             Upload your dataset and predict movie ratings with AI
@@ -272,7 +325,7 @@ export default function PredictorPage() {
                 predictions.map((p) => ({
                   movie_id: p.movie_id,
                   average_rating: p.average_rating.toFixed(2),
-                }))
+                })),
               )}
               <Button
                 onClick={handleDownload}
