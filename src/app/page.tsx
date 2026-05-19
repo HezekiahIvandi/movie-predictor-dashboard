@@ -180,6 +180,14 @@ export default function PredictorPage() {
       if (firstWithActual) {
         setSelectedMovieId(firstWithActual.movie_id);
       }
+
+      // Smooth scroll to the results table once it's rendered
+      setTimeout(() => {
+        const resultsEl = document.getElementById("predictions-result");
+        if (resultsEl) {
+          resultsEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 300);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -233,14 +241,22 @@ export default function PredictorPage() {
               <tbody className="divide-y divide-slate-200">
                 {tableData.map((row, i) => (
                   <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    {Object.values(row).map((v, j) => (
-                      <td
-                        key={j}
-                        className="px-4 py-2 text-slate-600 whitespace-nowrap"
-                      >
-                        {String(v)}
-                      </td>
-                    ))}
+                    {Object.values(row).map((v, j) => {
+                      const key = Object.keys(row)[j];
+                      const isLongText = key === "comment" || key === "title";
+                      return (
+                        <td
+                          key={j}
+                          className={`px-4 py-2.5 text-slate-600 ${
+                            isLongText
+                              ? "min-w-[240px] max-w-sm whitespace-normal break-words text-xs sm:text-sm"
+                              : "whitespace-nowrap text-xs sm:text-sm"
+                          }`}
+                        >
+                          {String(v)}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
@@ -252,24 +268,26 @@ export default function PredictorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 px-4 py-6 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center space-y-2 py-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Film className="w-10 h-10 text-indigo-600" />
-            <h1 className="text-4xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent py-1">
-              Movie Rating Predictor
-            </h1>
-            <div className="flex items-center gap-2">
+        <div className="text-center space-y-2 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-2">
+            <div className="flex items-center gap-2.5">
+              <Film className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600 shrink-0" />
+              <h1 className="text-3xl sm:text-4xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent py-1">
+                Movie Rating Predictor
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-100/80 px-3 py-1 rounded-full border border-slate-200/50 shadow-xs">
               {checkingBackend ? (
-                <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
               ) : backendConnected === true ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
               ) : backendConnected === false ? (
-                <AlertCircle className="w-5 h-5 text-red-500" />
+                <AlertCircle className="w-4 h-4 text-red-500" />
               ) : null}
-              <span className="text-sm text-slate-600">
+              <span className="text-xs sm:text-sm font-medium text-slate-600">
                 {checkingBackend
                   ? "Checking backend..."
                   : backendConnected === true
@@ -301,10 +319,10 @@ export default function PredictorPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="py-6 space-y-4">
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <label
                 htmlFor="file-upload"
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer shadow-sm"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors cursor-pointer shadow-sm text-sm font-semibold w-full sm:w-auto text-center"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 Choose File
@@ -317,9 +335,9 @@ export default function PredictorPage() {
                 className="hidden"
               />
               {fileName && (
-                <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-100 px-3 py-2 rounded-md">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  {fileName}
+                <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-100 px-3 py-2 rounded-md w-full sm:w-auto overflow-hidden">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                  <span className="truncate">{fileName}</span>
                 </div>
               )}
             </div>
@@ -356,11 +374,11 @@ export default function PredictorPage() {
             </CardHeader>
             <CardContent className="py-6 space-y-4">
               {renderTable(data.slice(0, 10))}
-              <div className="flex justify-end">
+              <div className="flex justify-end w-full">
                 <Button
                   onClick={handlePredict}
                   disabled={!hasValidColumns || loading}
-                  className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm"
+                  className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm w-full sm:w-auto"
                 >
                   {loading ? (
                     <>
@@ -381,7 +399,10 @@ export default function PredictorPage() {
 
         {/* Predictions Table */}
         {predictions.length > 0 && (
-          <Card className="shadow-lg border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card
+            id="predictions-result"
+            className="shadow-lg border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-500"
+          >
             <CardHeader className="pt-6 border-b bg-linear-to-r from-green-50 to-emerald-50">
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -398,10 +419,10 @@ export default function PredictorPage() {
                   average_rating: p.average_rating.toFixed(2),
                 })),
               )}
-              <div className="flex flex-wrap gap-3 justify-end">
+              <div className="flex flex-col sm:flex-row gap-3 justify-end w-full">
                 <Button
                   onClick={handleDownload}
-                  className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                  className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white w-full sm:w-auto"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Results (.xlsx)
@@ -419,7 +440,7 @@ export default function PredictorPage() {
                           ?.scrollIntoView({ behavior: "smooth" });
                       }, 100);
                     }}
-                    className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white animate-pulse"
+                    className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white animate-pulse w-full sm:w-auto"
                   >
                     <BarChart3 className="w-4 h-4 mr-2" />
                     {showComparison

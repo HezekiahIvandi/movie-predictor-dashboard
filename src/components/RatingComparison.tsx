@@ -250,36 +250,36 @@ export function RatingComparison({
     >
       {/* 1. Single Movie Drilldown Panel */}
       <div>
-        <CardHeader className="pt-6 border-b bg-linear-to-r from-indigo-50/30 to-purple-50/30">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <CardHeader className="p-4 sm:p-6 border-b bg-linear-to-r from-indigo-50/30 to-purple-50/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle className="flex items-center gap-2 text-slate-800">
-                <BarChart3 className="w-5 h-5 text-indigo-600" />
+              <CardTitle className="flex items-center gap-2 text-slate-800 text-lg sm:text-xl">
+                <BarChart3 className="w-5 h-5 text-indigo-600 shrink-0" />
                 Rating Comparison Analysis (Drilldown)
               </CardTitle>
-              <CardDescription className="text-slate-500">
+              <CardDescription className="text-slate-500 text-xs sm:text-sm">
                 Compare average predicted rating vs. actual IMDb rating per individual movie
               </CardDescription>
             </div>
             {/* Movie Selector Dropdown */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-slate-600">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <span className="text-sm font-medium text-slate-600 shrink-0">
                 Select Movie:
               </span>
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative w-full sm:w-auto" ref={dropdownRef}>
                 {/* Trigger Button */}
                 <button
                   type="button"
                   onClick={() => setIsOpen(!isOpen)}
-                  className="flex items-center justify-between w-56 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs cursor-pointer transition-all duration-200"
+                  className="flex items-center justify-between w-full sm:w-56 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs cursor-pointer transition-all duration-200"
                 >
                   <span className="truncate">{selectedMovieId || "Select a movie..."}</span>
-                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {/* Popover Options Menu */}
                 {isOpen && (
-                  <div className="absolute left-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1.5 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute left-0 mt-1.5 w-full sm:w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1.5 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="px-1.5 space-y-1">
                       {predictions
                         .filter((p) => p.actual_rating !== undefined && p.actual_rating !== null)
@@ -313,11 +313,11 @@ export function RatingComparison({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="py-8">
+        <CardContent className="p-4 sm:p-6 lg:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Visual Comparison Chart */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="bg-slate-50/60 rounded-xl p-6 border border-slate-100">
+              <div className="bg-slate-50/60 rounded-xl p-4 sm:p-6 border border-slate-100">
                 <div className="text-sm font-semibold text-slate-700 mb-6 flex justify-between">
                   <span>Comparison Visualization</span>
                   <span className="text-slate-400 text-xs">
@@ -536,14 +536,14 @@ export function RatingComparison({
 
       {/* 2. Global Dataset Overview (ChartJS Interactive Canvas) */}
       <div>
-        <CardContent className="py-8">
-          <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 h-96 relative">
+        <CardContent className="p-4 sm:p-6 lg:p-8">
+          <div className="bg-slate-50 rounded-xl p-2 sm:p-4 border border-slate-100 h-72 sm:h-96 relative">
             <canvas ref={canvasRef} />
           </div>
           <div className="flex justify-end w-full mt-4">
             <button
               onClick={handleDownloadChart}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
             >
               <Download className="w-4 h-4" />
               Download Chart (.png)
