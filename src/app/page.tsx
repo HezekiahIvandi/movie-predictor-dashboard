@@ -104,6 +104,29 @@ export default function PredictorPage() {
       const wb = XLSX.read(bstr, { type: "binary" });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(ws, { defval: "" }) as ExcelRow[];
+
+      if (json.length === 0) {
+        setError("Import failed: The uploaded file is empty.");
+        setFileName("");
+        setData([]);
+        if (e.target) e.target.value = "";
+        return;
+      }
+
+      const firstRow = json[0];
+      const hasTitle = "title" in firstRow;
+      const hasComment = "comment" in firstRow;
+
+      if (!hasTitle || !hasComment) {
+        setError(
+          "Import failed: The uploaded file must contain both 'title' and 'comment' columns.",
+        );
+        setFileName("");
+        setData([]);
+        if (e.target) e.target.value = "";
+        return;
+      }
+
       const comments: MovieCommentInput[] = json.map((d) => ({
         title: d.title || "",
         comment: d.comment || "",
@@ -429,7 +452,9 @@ export default function PredictorPage() {
                 </Button>
                 {predictions.some(
                   (p) =>
-                    p.actual_rating !== undefined && p.actual_rating !== null,
+                    p.actual_rating !== undefined &&
+                    p.actual_rating !== null &&
+                    p.actual_rating !== 0,
                 ) && (
                   <Button
                     onClick={() => {

@@ -39,13 +39,19 @@ export function RatingComparison({
   const [isOpen, setIsOpen] = useState(false);
 
   const hasActualRatings = predictions.some(
-    (p) => p.actual_rating !== undefined && p.actual_rating !== null,
+    (p) =>
+      p.actual_rating !== undefined &&
+      p.actual_rating !== null &&
+      p.actual_rating !== 0,
   );
 
   // Auto-select the first valid movie with an actual rating if none is selected or selection becomes invalid
   useEffect(() => {
     const validMovies = predictions.filter(
-      (p) => p.actual_rating !== undefined && p.actual_rating !== null,
+      (p) =>
+        p.actual_rating !== undefined &&
+        p.actual_rating !== null &&
+        p.actual_rating !== 0,
     );
     if (validMovies.length > 0) {
       const isValid = validMovies.some((p) => p.movie_id === selectedMovieId);
@@ -77,7 +83,10 @@ export function RatingComparison({
 
     // Filter predictions that have actual ratings
     const validData = predictions.filter(
-      (p) => p.actual_rating !== undefined && p.actual_rating !== null,
+      (p) =>
+        p.actual_rating !== undefined &&
+        p.actual_rating !== null &&
+        p.actual_rating !== 0,
     );
 
     if (validData.length === 0) return;
@@ -185,7 +194,7 @@ export function RatingComparison({
   const handleDownloadChart = () => {
     if (!canvasRef.current) return;
     const originalCanvas = canvasRef.current;
-    
+
     // Create temporary canvas to paint solid white background
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = originalCanvas.width;
@@ -212,7 +221,12 @@ export function RatingComparison({
   if (!showComparison || !hasActualRatings) return null;
 
   const selectedData = predictions.find((p) => p.movie_id === selectedMovieId);
-  if (!selectedData || selectedData.actual_rating === undefined) {
+  if (
+    !selectedData ||
+    selectedData.actual_rating === undefined ||
+    selectedData.actual_rating === null ||
+    selectedData.actual_rating === 0
+  ) {
     return (
       <Card
         id="comparison-section"
@@ -255,10 +269,11 @@ export function RatingComparison({
             <div>
               <CardTitle className="flex items-center gap-2 text-slate-800 text-lg sm:text-xl">
                 <BarChart3 className="w-5 h-5 text-indigo-600 shrink-0" />
-                Rating Comparison Analysis (Drilldown)
+                Rating Comparison Analysis
               </CardTitle>
               <CardDescription className="text-slate-500 text-xs sm:text-sm">
-                Compare average predicted rating vs. actual IMDb rating per individual movie
+                Compare average predicted rating vs. actual IMDb rating per
+                individual movie
               </CardDescription>
             </div>
             {/* Movie Selector Dropdown */}
@@ -273,8 +288,12 @@ export function RatingComparison({
                   onClick={() => setIsOpen(!isOpen)}
                   className="flex items-center justify-between w-full sm:w-56 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-xs cursor-pointer transition-all duration-200"
                 >
-                  <span className="truncate">{selectedMovieId || "Select a movie..."}</span>
-                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
+                  <span className="truncate">
+                    {selectedMovieId || "Select a movie..."}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`}
+                  />
                 </button>
 
                 {/* Popover Options Menu */}
@@ -282,7 +301,12 @@ export function RatingComparison({
                   <div className="absolute left-0 mt-1.5 w-full sm:w-56 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1.5 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="px-1.5 space-y-1">
                       {predictions
-                        .filter((p) => p.actual_rating !== undefined && p.actual_rating !== null)
+                        .filter(
+                          (p) =>
+                            p.actual_rating !== undefined &&
+                            p.actual_rating !== null &&
+                            p.actual_rating !== 0,
+                        )
                         .map((p) => {
                           const isSelected = p.movie_id === selectedMovieId;
                           return (
