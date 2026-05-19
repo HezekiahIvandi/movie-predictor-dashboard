@@ -22,6 +22,7 @@ import {
   Download,
   Table,
   BarChart3,
+  Info,
 } from "lucide-react";
 import { RatingComparison } from "@/components/RatingComparison";
 
@@ -321,9 +322,19 @@ export default function PredictorPage() {
               </span>
             </div>
           </div>
-          <p className="text-slate-600 text-lg">
-            Upload your dataset and predict movie ratings
-          </p>
+          <div className="flex items-center justify-center gap-1.5 mt-2">
+            <span className="text-slate-600 text-lg font-semibold">
+              Prediction using pre-release comment
+            </span>
+            <div className="relative group cursor-pointer inline-flex items-center">
+              <Info className="w-4.5 h-4.5 text-slate-400 hover:text-indigo-600 transition-colors" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2.5 w-72 sm:w-80 p-3 bg-slate-900 text-white rounded-lg shadow-xl text-xs font-normal leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 text-left">
+                This dashboard calculates expected movie scores by analyzing public audience comments and discussions posted <strong>before the movie's official release</strong>. By processing these early sentiment indicators, the predictor forecasts anticipated ratings, allowing you to gauge viewer anticipation and compare statistical predictions directly with actual IMDb rating results.
+                {/* Tooltip Arrow */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-slate-900" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Upload Section */}
