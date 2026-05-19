@@ -21,18 +21,47 @@ import {
   Loader2,
   Download,
   Table,
+  BarChart3,
 } from "lucide-react";
+import { RatingComparison } from "@/components/RatingComparison";
+
+type PredictResponse = {
+  movie_id: string;
+  predicted_rating: number;
+  comment_text: string;
+  actual_rating?: number;
+};
+
+interface ExcelRow {
+  title?: string;
+  comment?: string;
+  imdb_rating?: string | number;
+}
+
+type MovieCommentInput = {
+  title: string;
+  comment: string;
+  imdb_rating: number | null;
+};
+
+type PredictionResult = {
+  movie_id: string;
+  average_rating: number;
+  actual_rating?: number;
+};
 
 export default function PredictorPage() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<MovieCommentInput[]>([]);
   const [fileName, setFileName] = useState("");
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [predictions, setPredictions] = useState<PredictionResult[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [backendConnected, setBackendConnected] = useState<boolean | null>(
     null,
   );
   const [checkingBackend, setCheckingBackend] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [selectedMovieId, setSelectedMovieId] = useState<string>("");
 
   // Check backend health
   const checkBackendHealth = async () => {
@@ -66,16 +95,22 @@ export default function PredictorPage() {
     setFileName(file.name);
     setError("");
     setPredictions([]);
+    setShowComparison(false);
+    setSelectedMovieId("");
 
     const reader = new FileReader();
     reader.onload = (evt) => {
       const bstr = evt.target?.result;
       const wb = XLSX.read(bstr, { type: "binary" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
-      const comments = json.map((d: any) => ({
-        title: d.title,
-        comment: d.comment,
+      const json = XLSX.utils.sheet_to_json(ws, { defval: "" }) as ExcelRow[];
+      const comments: MovieCommentInput[] = json.map((d) => ({
+        title: d.title || "",
+        comment: d.comment || "",
+        imdb_rating:
+          d.imdb_rating !== undefined && d.imdb_rating !== ""
+            ? Number(d.imdb_rating)
+            : null,
       }));
       setData(comments);
     };
@@ -91,6 +126,7 @@ export default function PredictorPage() {
       const comments = data.map((d) => ({
         movie_id: d.title,
         comment_text: d.comment,
+        imdb_rating: d?.imdb_rating || null,
       }));
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/predict`,
@@ -104,22 +140,52 @@ export default function PredictorPage() {
         },
       );
       if (!res.ok) throw new Error("Prediction failed");
-      const result = await res.json();
+      const result: PredictResponse[] = await res.json();
       const grouped: Record<string, number[]> = {};
-      result.forEach((r: any) => {
+      const actualRatings: Record<string, number> = {};
+
+      result.forEach((r: PredictResponse) => {
         if (!grouped[r.movie_id]) grouped[r.movie_id] = [];
         grouped[r.movie_id].push(r.predicted_rating);
+
+        if (r.actual_rating !== undefined && r.actual_rating !== null) {
+          actualRatings[r.movie_id] = r.actual_rating;
+        }
       });
 
-      const averaged = Object.entries(grouped).map(([movie_id, ratings]) => ({
-        movie_id,
-        average_rating:
-          ratings.reduce((a, b) => a + b, 0) / (ratings.length || 1),
-      }));
+      const averaged: PredictionResult[] = Object.entries(grouped).map(
+        ([movie_id, ratings]) => {
+          let actual: number | undefined = actualRatings[movie_id];
+          if (actual === undefined) {
+            const matchingInput = data.find((d) => d.title === movie_id);
+            if (matchingInput && matchingInput.imdb_rating !== null) {
+              actual = matchingInput.imdb_rating;
+            }
+          }
+
+          return {
+            movie_id,
+            average_rating:
+              ratings.reduce((a, b) => a + b, 0) / (ratings.length || 1),
+            ...(actual !== undefined ? { actual_rating: actual } : {}),
+          };
+        },
+      );
 
       setPredictions(averaged);
-    } catch (err: any) {
-      setError(err.message);
+
+      const firstWithActual = averaged.find(
+        (p) => p.actual_rating !== undefined,
+      );
+      if (firstWithActual) {
+        setSelectedMovieId(firstWithActual.movie_id);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -137,7 +203,10 @@ export default function PredictorPage() {
   const hasValidColumns =
     data.length > 0 && ["title", "comment"].every((col) => col in data[0]);
 
-  const renderTable = (tableData: any[], title?: string) => {
+  const renderTable = (
+    tableData: Record<string, string | number | boolean | null | undefined>[],
+    title?: string,
+  ) => {
     if (tableData.length === 0) return null;
     return (
       <div className="space-y-3">
@@ -183,13 +252,13 @@ export default function PredictorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2 py-8">
           <div className="flex items-center justify-center gap-3 mb-2">
             <Film className="w-10 h-10 text-indigo-600" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent py-1">
+            <h1 className="text-4xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent py-1">
               Movie Rating Predictor
             </h1>
             <div className="flex items-center gap-2">
@@ -212,13 +281,13 @@ export default function PredictorPage() {
             </div>
           </div>
           <p className="text-slate-600 text-lg">
-            Upload your dataset and predict movie ratings with AI
+            Upload your dataset and predict movie ratings
           </p>
         </div>
 
         {/* Upload Section */}
         <Card className="shadow-lg border-slate-200">
-          <CardHeader className="border-b bg-gradient-to-r from-indigo-50 to-purple-50 pt-6">
+          <CardHeader className="border-b bg-linear-to-r from-indigo-50 to-purple-50 pt-6">
             <CardTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5" />
               Upload Dataset
@@ -226,7 +295,9 @@ export default function PredictorPage() {
             <CardDescription>
               Upload an Excel or CSV file with{" "}
               <span className="font-semibold">title</span> and{" "}
-              <span className="font-semibold">comment</span> columns.
+              <span className="font-semibold">comment</span> columns. <br />
+              Optionally include an <b>imdb_rating</b> column to compare with
+              the model's predictions.
             </CardDescription>
           </CardHeader>
           <CardContent className="py-6 space-y-4">
@@ -274,7 +345,7 @@ export default function PredictorPage() {
         {/* Data Preview */}
         {data.length > 0 && hasValidColumns && (
           <Card className="shadow-md border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <CardHeader className="border-b from-blue-50 to-sky-50 pt-6">
+            <CardHeader className="border-b bg-linear-to-r from-blue-50 to-sky-50 pt-6">
               <CardTitle className="flex items-center gap-2">
                 <Table className="w-5 h-5 text-blue-600" />
                 Data Preview
@@ -289,7 +360,7 @@ export default function PredictorPage() {
                 <Button
                   onClick={handlePredict}
                   disabled={!hasValidColumns || loading}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm"
+                  className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm"
                 >
                   {loading ? (
                     <>
@@ -311,7 +382,7 @@ export default function PredictorPage() {
         {/* Predictions Table */}
         {predictions.length > 0 && (
           <Card className="shadow-lg border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <CardHeader className="pt-6 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader className="pt-6 border-b bg-linear-to-r from-green-50 to-emerald-50">
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 Predicted Ratings
@@ -327,16 +398,47 @@ export default function PredictorPage() {
                   average_rating: p.average_rating.toFixed(2),
                 })),
               )}
-              <Button
-                onClick={handleDownload}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Results (.xlsx)
-              </Button>
+              <div className="flex flex-wrap gap-3 justify-end">
+                <Button
+                  onClick={handleDownload}
+                  className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Results (.xlsx)
+                </Button>
+                {predictions.some(
+                  (p) =>
+                    p.actual_rating !== undefined && p.actual_rating !== null,
+                ) && (
+                  <Button
+                    onClick={() => {
+                      setShowComparison(!showComparison);
+                      setTimeout(() => {
+                        document
+                          .getElementById("comparison-section")
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      }, 100);
+                    }}
+                    className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white animate-pulse"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    {showComparison
+                      ? "Hide Comparison"
+                      : "Compare with Actual Rating"}
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Comparison Section */}
+        <RatingComparison
+          predictions={predictions}
+          selectedMovieId={selectedMovieId}
+          setSelectedMovieId={setSelectedMovieId}
+          showComparison={showComparison}
+        />
       </div>
     </div>
   );
